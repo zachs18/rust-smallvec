@@ -1,5 +1,6 @@
 use crate::{smallvec, SmallVec};
 
+use core::hash::Hasher;
 use core::iter::FromIterator;
 
 use alloc::borrow::ToOwned;
@@ -600,19 +601,24 @@ fn test_hash() {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::Hash;
 
+    fn hash(value: impl Hash) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        value.hash(&mut hasher);
+        hasher.finish()
+    }
+
     {
         let mut a: SmallVec<u32, 2> = SmallVec::new();
         let b = [1, 2];
         a.extend(b.iter().cloned());
-        let mut hasher = DefaultHasher::new();
-        assert_eq!(a.hash(&mut hasher), b.hash(&mut hasher));
+        assert_eq!(hash(a), hash(b));
     }
+
     {
         let mut a: SmallVec<u32, 2> = SmallVec::new();
         let b = [1, 2, 11, 12];
         a.extend(b.iter().cloned());
-        let mut hasher = DefaultHasher::new();
-        assert_eq!(a.hash(&mut hasher), b.hash(&mut hasher));
+        assert_eq!(hash(a), hash(b));
     }
 }
 
