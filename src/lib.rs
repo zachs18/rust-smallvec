@@ -961,10 +961,11 @@ impl<T, const N: usize> SmallVec<T, N> {
         // SAFETY: see above
         debug_assert!(self.spilled());
         let len = self.len();
-        let (ptr, cap) = self.raw.heap;
+        let cap = self.raw.heap.1;
         if len == cap {
             self.reserve(1);
         }
+        let ptr = self.raw.heap.0;
         ptr.as_ptr().add(len).write(value);
         self.set_len(len + 1)
     }

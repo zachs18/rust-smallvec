@@ -1128,3 +1128,23 @@ fn max_insert() {
     let mut sv: SmallVec<i32, 2> = smallvec![0];
     sv.insert(usize::MAX, 0);
 }
+
+#[test]
+fn collect_from_iter() {
+    // Regression test for https://github.com/servo/rust-smallvec/issues/353
+    struct IterNoHint<I: Iterator>(I);
+
+    impl<I: Iterator> Iterator for IterNoHint<I> {
+        type Item = I::Item;
+        fn next(&mut self) -> Option<Self::Item> { self.0.next() }
+
+        // no implementation of size_hint means it returns (0, None) - which forces from_iter to
+        // grow the allocated space iteratively.
+    }
+
+    // A length of 3 is fine to trigger this bug under valgrind, but making the vector 1 million
+    // elements makes it crash - which is much easier to detect.
+    let iter = IterNoHint(std::iter::repeat(1u8).take(1_000_000));
+
+    let _y: SmallVec<u8, 1> = SmallVec::from_iter(iter);
+}
