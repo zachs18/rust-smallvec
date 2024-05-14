@@ -16,15 +16,19 @@
 //!
 //! ## Optional features
 //!
+//! ### `std`
+//!
+//! When this feature is enabled, traits available from `std` are implemented:
+//!
+//! * `SmallVec<u8, _>` implements the [`std::io::Write`] trait.
+//! * [`CollectionAllocErr`] implements [`std::error::Error`].
+//!
+//! This feature is not compatible with `#![no_std]` programs.
+//!
 //! ### `serde`
 //!
 //! When this optional dependency is enabled, `SmallVec` implements the `serde::Serialize` and
 //! `serde::Deserialize` traits.
-//!
-//! ### `write`
-//!
-//! When this feature is enabled, `SmallVec<u8, _>` implements the `std::io::Write` trait.
-//! This feature is not compatible with `#![no_std]` programs.
 //!
 //! ### `extract_if`
 //!
@@ -62,7 +66,7 @@
 #[doc(hidden)]
 pub extern crate alloc;
 
-#[cfg(any(test, feature = "write"))]
+#[cfg(any(test, feature = "std"))]
 extern crate std;
 
 #[cfg(test)]
@@ -93,7 +97,7 @@ use serde::{
     de::{Deserialize, Deserializer, SeqAccess, Visitor},
     ser::{Serialize, SerializeSeq, Serializer},
 };
-#[cfg(feature = "write")]
+#[cfg(feature = "std")]
 use std::io;
 
 /// Error type for APIs with fallible heap allocation
@@ -112,6 +116,10 @@ impl core::fmt::Display for CollectionAllocErr {
         write!(f, "Allocation error: {:?}", self)
     }
 }
+
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+impl std::error::Error for CollectionAllocErr {}
 
 /// Either a stack array with `length <= N` or a heap array
 /// whose pointer and capacity are stored here.
@@ -797,7 +805,7 @@ impl<T, const N: usize> SmallVec<T, N> {
     /// the elements `[0, at)` with its previous capacity unchanged.
     ///
     /// - If you want to take ownership of the entire contents and capacity of
-    ///   the vector, see [`mem::take`] or [`mem::replace`].
+    ///   the vector, see [`core::mem::take`] or [`core::mem::replace`].
     /// - If you don't need the returned vector at all, see [`SmallVec::truncate`].
     /// - If you want to take ownership of an arbitrary subslice, or you don't
     ///   necessarily want to store the removed items in a vector, see [`SmallVec::drain`].
@@ -2145,8 +2153,8 @@ where
     }
 }
 
-#[cfg(feature = "write")]
-#[cfg_attr(docsrs, doc(cfg(feature = "write")))]
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<const N: usize> io::Write for SmallVec<u8, N> {
     #[inline]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
